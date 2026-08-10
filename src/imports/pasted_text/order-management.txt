@@ -1,0 +1,1569 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <cstdlib>
+#include <ctime>
+#include <sstream>
+#include <algorithm>
+#include <iomanip>
+#include <queue>
+
+using namespace std;
+
+/* ============= NOTIFICATION CLASS ============= */
+class Notification {
+public:
+    string orderID;
+    string username;
+    string message;
+    string timestamp;
+    bool isRead;
+
+    Notification(string oID, string user, string msg, string time)
+        : orderID(oID), username(user), message(msg), timestamp(time), isRead(false) {}
+};
+
+/* ============= ORDER ITEM WITH COMMENTS ============= */
+class OrderItem {
+public:
+    string itemName;
+    double price;
+    int quantity;
+    string comment;
+    int prepTime;
+
+    OrderItem(string name, double p, int q, int prep, string c = "")
+        : itemName(name), price(p), quantity(q), prepTime(prep), comment(c) {}
+
+    double total() { return price * quantity; }
+    int prepTotal() { return prepTime * quantity; }
+};
+
+/* ============= COMPLETE ORDER RECORD ============= */
+class OrderRecord {
+public:
+    string orderID;
+    string username;
+    string email;
+    string phoneNumber;
+    vector<OrderItem> items;
+    double subtotal;
+    double tax;
+    double discount;
+    double finalAmount;
+    string paymentMethod;
+    string orderDate;
+    string orderTime;
+    bool isCompleted;
+    int estimatedPrepTime;
+    int actualPrepTime;
+
+    OrderRecord() : subtotal(0), tax(0), discount(0), finalAmount(0), isCompleted(false), 
+                   estimatedPrepTime(0), actualPrepTime(0) {}
+};
+
+/* ============= MENU ITEM CLASS ============= */
+class MenuItem {
+public:
+    string name;
+    double price;
+    string category;
+    string type;
+    int prepTime;
+
+    MenuItem(string n, double p, string c, string t, int prep) {
+        name = n;
+        price = p;
+        category = c;
+        type = t;
+        prepTime = prep;
+    }
+
+    MenuItem() {}
+};
+
+/* ============= USER CLASS ============= */
+class User {
+public:
+    string username;
+    string password;
+    string email;
+    string phoneNumber;
+    double walletBalance;
+    vector<string> orderHistory;
+    double totalSpent;
+    vector<Notification> notifications;
+
+    User() : walletBalance(0), totalSpent(0) {}
+
+    User(string u, string p, string e, string ph)
+        : username(u), password(p), email(e), phoneNumber(ph), walletBalance(0), totalSpent(0) {}
+};
+
+/* ============= KITCHEN PREP ITEM ============= */
+class KitchenPrepItem {
+public:
+    string itemName;
+    int quantity;
+    string comment;
+    int prepTime;
+    string orderID;
+    string orderDate;
+    string orderTime;
+    bool isPrepared;
+    int priority;
+
+    KitchenPrepItem(string item, int qty, string cmt, int prep, string oID, int pri = 3)
+        : itemName(item), quantity(qty), comment(cmt), prepTime(prep), orderID(oID), isPrepared(false), priority(pri) {}
+
+    KitchenPrepItem() : isPrepared(false), priority(3) {}
+};
+
+/* ============= GLOBAL DATA (SHARED DATABASE) ============= */
+vector<MenuItem> menu = {
+    {"Paneer Tikka", 180, "Starter", "Veg", 15},
+    {"Chicken 65", 190, "Starter", "NonVeg", 20},
+    {"Honey Chilli Potato", 150, "Starter", "Vegan", 12},
+    {"Spring Rolls", 140, "Starter", "Vegan", 10},
+    {"Tomato Soup", 100, "Soup", "Vegan", 8},
+    {"Sweet Corn Soup", 110, "Soup", "Veg", 8},
+    {"Veg Pizza", 220, "Pizza", "Veg", 25},
+    {"Chicken Pizza", 280, "Pizza", "NonVeg", 30},
+    {"Rajma Chawal", 140, "Main", "Vegan", 20},
+    {"Butter Chicken", 240, "Main", "NonVeg", 25},
+    {"Veg Noodles", 160, "Main", "Vegan", 15},
+    {"Pav Bhaji", 120, "Main", "Veg", 12},
+    {"Masala Chai", 40, "Drink", "Veg", 5},
+    {"Cold Coffee", 90, "Drink", "Veg", 5},
+    {"Virgin Mojito", 99, "Drink", "Vegan", 5},
+    {"French Fries", 120, "Snack", "Vegan", 10},
+    {"Veg Sandwich", 90, "Snack", "Veg", 8},
+    {"Chicken Roll", 170, "Snack", "NonVeg", 12},
+    {"Gulab Jamun", 50, "Dessert", "Veg", 5},
+    {"Brownie Icecream", 120, "Dessert", "Veg", 7}
+};
+
+// SHARED DATABASE
+map<string, User> allUsers;
+vector<OrderRecord> allOrders;
+vector<KitchenPrepItem> kitchenQueue;
+map<string, int> trendingDishes;
+queue<Notification> notificationSystem;
+double totalRevenue = 0;
+double totalProfit = 0;
+
+const double COST_PERCENTAGE = 0.40;
+
+// Current user and admin status
+User* currentUser = nullptr;
+bool adminLoggedIn = false;
+bool menuDisplayed = false;
+vector<OrderItem> cart;
+
+// Admin credentials
+string adminUsername = "admin";
+string adminPassword = "admin123";
+
+/* ============= UTILITIES ============= */
+string generateOrderID() {
+    srand(time(0));
+    stringstream ss;
+    ss << "CAF" << rand() % 10000;
+    return ss.str();
+}
+
+bool userExists(const string& username) {
+    return allUsers.find(username) != allUsers.end();
+}
+
+bool isValidEmail(const string& email) {
+    return email.find('@') != string::npos && email.find('.') != string::npos;
+}
+
+bool isValidPhone(const string& phone) {
+    return phone.length() == 10 && all_of(phone.begin(), phone.end(), ::isdigit);
+}
+
+string getCurrentDate() {
+    time_t now = time(0);
+    tm* timeinfo = localtime(&now);
+    stringstream ss;
+    ss << (timeinfo->tm_year + 1900) << "-" << setfill('0') << setw(2) 
+       << (timeinfo->tm_mon + 1) << "-" << setw(2) << timeinfo->tm_mday;
+    return ss.str();
+}
+
+string getCurrentTime() {
+    time_t now = time(0);
+    tm* timeinfo = localtime(&now);
+    stringstream ss;
+    ss << setfill('0') << setw(2) << timeinfo->tm_hour << ":" 
+       << setw(2) << timeinfo->tm_min << ":" << setw(2) << timeinfo->tm_sec;
+    return ss.str();
+}
+
+/* ============= SEND NOTIFICATION ============= */
+void sendNotification(string orderID, string username, string message) {
+    if (allUsers.find(username) != allUsers.end()) {
+        Notification notif(orderID, username, message, getCurrentTime());
+        allUsers[username].notifications.push_back(notif);
+        notificationSystem.push(notif);
+        cout << "\n✓ Notification sent to " << username << "!\n";
+    }
+}
+
+/* ============= USER REGISTRATION ============= */
+void userRegistration() {
+    cout << "\n========== USER REGISTRATION ==========\n";
+
+    string username, password, email, phone;
+
+    cout << "Enter username: ";
+    cin.ignore();
+    getline(cin, username);
+
+    if (userExists(username)) {
+        cout << "❌ Username already exists! Please try another username.\n";
+        return;
+    }
+
+    cout << "Enter password (min 6 characters): ";
+    getline(cin, password);
+
+    if (password.length() < 6) {
+        cout << "❌ Password must be at least 6 characters long!\n";
+        return;
+    }
+
+    cout << "Enter email address: ";
+    getline(cin, email);
+
+    if (!isValidEmail(email)) {
+        cout << "❌ Invalid email format!\n";
+        return;
+    }
+
+    cout << "Enter phone number (10 digits): ";
+    getline(cin, phone);
+
+    if (!isValidPhone(phone)) {
+        cout << "❌ Invalid phone number! Must be 10 digits.\n";
+        return;
+    }
+
+    allUsers[username] = User(username, password, email, phone);
+    cout << "\n✓ Registration successful! Welcome " << username << "!\n";
+}
+
+/* ============= USER LOGIN ============= */
+bool userLogin() {
+    cout << "\n========== USER LOGIN ==========\n";
+
+    string username, password;
+
+    cout << "Enter username: ";
+    cin.ignore();
+    getline(cin, username);
+
+    if (!userExists(username)) {
+        cout << "❌ Username not found!\n";
+        return false;
+    }
+
+    cout << "Enter password: ";
+    getline(cin, password);
+
+    if (allUsers[username].password != password) {
+        cout << "❌ Incorrect password!\n";
+        return false;
+    }
+
+    currentUser = &allUsers[username];
+    cout << "\n✓ Login successful! Welcome " << username << "!\n";
+    return true;
+}
+
+/* ============= ADD TO CART ============= */
+void addToCart(MenuItem item, int qty, string comment = "") {
+    cart.push_back(OrderItem(item.name, item.price, qty, item.prepTime, comment));
+    trendingDishes[item.name] += qty;
+    cout << "✓ Item added to cart\n";
+}
+
+/* ============= SHOW MENU ============= */
+void showMenu() {
+    cout << "\n========== MENU ==========\n";
+    string currentCat = "";
+    for (int i = 0; i < menu.size(); i++) {
+        if (menu[i].category != currentCat) {
+            currentCat = menu[i].category;
+            cout << "\n[" << currentCat << "]\n";
+        }
+        cout << i + 1 << ". " << menu[i].name << " ₹" << menu[i].price
+             << " (" << menu[i].type << ") - " << menu[i].prepTime << " min\n";
+    }
+    menuDisplayed = true;
+}
+
+/* ============= SEARCH FOOD ============= */
+void searchFood() {
+    string key;
+    cout << "\nEnter food name to search: ";
+    cin.ignore();
+    getline(cin, key);
+
+    bool found = false;
+    for (auto& m : menu) {
+        if (m.name.find(key) != string::npos) {
+            found = true;
+            cout << "\n✓ Found: " << m.name << " ₹" << m.price << " (" << m.type << ")\n";
+            char ch;
+            cout << "Add to cart? (y/n): ";
+            cin >> ch;
+            if (ch == 'y' || ch == 'Y') {
+                int qty;
+                cout << "Enter quantity: ";
+                cin >> qty;
+                if (qty <= 0) {
+                    cout << "❌ Invalid quantity!\n";
+                    continue;
+                }
+
+                string comment;
+                cout << "Any special comments? (Press Enter to skip): ";
+                cin.ignore();
+                getline(cin, comment);
+                addToCart(m, qty, comment);
+            }
+        }
+    }
+
+    if (!found) {
+        cout << "❌ No items found matching '" << key << "'\n";
+    }
+}
+
+/* ============= VEGAN MENU ============= */
+void veganMenu() {
+    cout << "\n========== VEGAN MENU ==========\n";
+    int count = 0;
+    for (auto& m : menu) {
+        if (m.type == "Vegan") {
+            cout << ++count << ". " << m.name << " ₹" << m.price << " - " << m.prepTime << " min\n";
+        }
+    }
+
+    if (count == 0) {
+        cout << "No vegan items available\n";
+        return;
+    }
+
+    cout << "\nEnter item number (0 to go back): ";
+    int choice;
+    cin >> choice;
+
+    if (choice == 0) return;
+
+    count = 0;
+    for (auto& m : menu) {
+        if (m.type == "Vegan") {
+            count++;
+            if (count == choice) {
+                int qty;
+                cout << "Enter quantity: ";
+                cin >> qty;
+                if (qty <= 0) {
+                    cout << "❌ Invalid quantity!\n";
+                    return;
+                }
+
+                string comment;
+                cout << "Any special comments? (Press Enter to skip): ";
+                cin.ignore();
+                getline(cin, comment);
+                addToCart(m, qty, comment);
+                return;
+            }
+        }
+    }
+
+    cout << "❌ Invalid choice!\n";
+}
+
+/* ============= RANDOM MEAL ============= */
+void randomMeal() {
+    double budget;
+    cout << "\nEnter your budget: ₹";
+    cin >> budget;
+
+    if (budget <= 0) {
+        cout << "❌ Invalid budget!\n";
+        return;
+    }
+
+    srand(time(0));
+    double total = 0;
+    vector<MenuItem> randomItems;
+
+    while (true) {
+        int r = rand() % menu.size();
+        if (total + menu[r].price > budget)
+            break;
+        randomItems.push_back(menu[r]);
+        total += menu[r].price;
+    }
+
+    if (randomItems.empty()) {
+        cout << "❌ No items available within your budget!\n";
+        return;
+    }
+
+    cout << "\n✓ Suggested items within your budget:\n";
+    for (int i = 0; i < randomItems.size(); i++) {
+        cout << (i + 1) << ". " << randomItems[i].name << " ₹" << randomItems[i].price << endl;
+    }
+    cout << "Total: ₹" << total << endl;
+
+    char ch;
+    cout << "Add all to cart? (y/n): ";
+    cin >> ch;
+    if (ch == 'y' || ch == 'Y') {
+        for (auto& item : randomItems) {
+            addToCart(item, 1);
+        }
+    }
+}
+
+/* ============= COMBO GENERATOR ============= */
+void comboGenerator() {
+    srand(time(0));
+    vector<MenuItem> starters, mains, drinks;
+
+    for (auto& m : menu) {
+        if (m.category == "Starter")
+            starters.push_back(m);
+        if (m.category == "Main")
+            mains.push_back(m);
+        if (m.category == "Drink")
+            drinks.push_back(m);
+    }
+
+    if (starters.empty() || mains.empty() || drinks.empty()) {
+        cout << "❌ Cannot generate combo - insufficient items in categories\n";
+        return;
+    }
+
+    MenuItem s = starters[rand() % starters.size()];
+    MenuItem m = mains[rand() % mains.size()];
+    MenuItem d = drinks[rand() % drinks.size()];
+
+    double comboPrice = (s.price + m.price + d.price) * 0.85;
+
+    cout << "\n========== TODAY'S COMBO (15% OFF) ==========\n";
+    cout << s.name << " (₹" << s.price << ")\n";
+    cout << " + " << m.name << " (₹" << m.price << ")\n";
+    cout << " + " << d.name << " (₹" << d.price << ")\n";
+    cout << "Original Price: ₹" << (s.price + m.price + d.price) << endl;
+    cout << "Combo Price: ₹" << comboPrice << endl;
+
+    int qty = 0;
+    cout << "Enter combo quantity (0 to skip): ";
+    cin >> qty;
+
+    if (qty > 0) {
+        string comment;
+        cout << "Any special comments? (Press Enter to skip): ";
+        cin.ignore();
+        getline(cin, comment);
+
+        addToCart(s, qty, comment);
+        addToCart(m, qty, comment);
+        addToCart(d, qty, comment);
+    }
+}
+
+/* ============= ADD ORDER ============= */
+void addOrder() {
+    if (!menuDisplayed) {
+        showMenu();
+    }
+
+    int choice;
+    cout << "\nEnter item number (0 to go back): ";
+    cin >> choice;
+
+    if (choice == 0) return;
+
+    if (choice < 1 || choice > menu.size()) {
+        cout << "❌ Invalid item number!\n";
+        return;
+    }
+
+    int qty;
+    cout << "Enter quantity: ";
+    cin >> qty;
+
+    if (qty <= 0) {
+        cout << "❌ Invalid quantity!\n";
+        return;
+    }
+
+    string comment;
+    cout << "Any special comments? (Press Enter to skip): ";
+    cin.ignore();
+    getline(cin, comment);
+
+    addToCart(menu[choice - 1], qty, comment);
+}
+
+/* ============= VIEW CART ============= */
+void showCart() {
+    if (cart.empty()) {
+        cout << "\n❌ Cart is empty!\n";
+        return;
+    }
+
+    double subtotal = 0;
+    cout << "\n========== SHOPPING CART ==========\n";
+    for (int i = 0; i < cart.size(); i++) {
+        cout << "\n" << (i + 1) << ". " << cart[i].itemName << " x" << cart[i].quantity
+             << " ₹" << cart[i].total();
+        if (!cart[i].comment.empty()) {
+            cout << "\n   📝 Note: " << cart[i].comment;
+        }
+        cout << endl;
+        subtotal += cart[i].total();
+    }
+    cout << "\n________________________________\n";
+    cout << "Subtotal: ₹" << subtotal << endl;
+}
+
+/* ============= REMOVE ITEM ============= */
+void removeItem() {
+    if (cart.empty()) {
+        cout << "\n❌ Cart is empty!\n";
+        return;
+    }
+
+    showCart();
+    int index;
+    cout << "\nEnter item number to remove (0 to cancel): ";
+    cin >> index;
+
+    if (index == 0) return;
+
+    if (index < 1 || index > cart.size()) {
+        cout << "❌ Invalid item number!\n";
+        return;
+    }
+
+    cout << "✓ " << cart[index - 1].itemName << " removed from cart\n";
+    cart.erase(cart.begin() + index - 1);
+}
+
+/* ============= EDIT QUANTITY ============= */
+void editQuantity() {
+    if (cart.empty()) {
+        cout << "\n❌ Cart is empty!\n";
+        return;
+    }
+
+    showCart();
+    int index;
+    cout << "\nEnter item number to edit (0 to cancel): ";
+    cin >> index;
+
+    if (index == 0) return;
+
+    if (index < 1 || index > cart.size()) {
+        cout << "❌ Invalid item number!\n";
+        return;
+    }
+
+    int qty;
+    cout << "Enter new quantity: ";
+    cin >> qty;
+
+    if (qty <= 0) {
+        cout << "❌ Invalid quantity!\n";
+        return;
+    }
+
+    cart[index - 1].quantity = qty;
+    cout << "✓ Quantity updated\n";
+}
+
+/* ============= EDIT COMMENTS ============= */
+void editComments() {
+    if (cart.empty()) {
+        cout << "\n❌ Cart is empty!\n";
+        return;
+    }
+
+    showCart();
+    int index;
+    cout << "\nEnter item number to add/edit comment (0 to cancel): ";
+    cin >> index;
+
+    if (index == 0) return;
+
+    if (index < 1 || index > cart.size()) {
+        cout << "❌ Invalid item number!\n";
+        return;
+    }
+
+    string newComment;
+    cout << "Enter new comment (or press Enter to clear): ";
+    cin.ignore();
+    getline(cin, newComment);
+
+    cart[index - 1].comment = newComment;
+    cout << "✓ Comment updated\n";
+}
+
+/* ============= SHOW TRENDING ============= */
+void showTrending() {
+    if (trendingDishes.empty()) {
+        cout << "\n❌ No orders yet!\n";
+        return;
+    }
+
+    cout << "\n========== TRENDING DISHES ==========\n";
+    vector<pair<string, int>> trends(trendingDishes.begin(), trendingDishes.end());
+    sort(trends.begin(), trends.end(),
+         [](const pair<string, int>& a, const pair<string, int>& b) {
+             return a.second > b.second;
+         });
+
+    for (int i = 0; i < trends.size(); i++) {
+        cout << (i + 1) << ". " << trends[i].first << " - Ordered " << trends[i].second << " times\n";
+    }
+}
+
+/* ============= CHECKOUT & PAYMENT ============= */
+void checkout() {
+    if (cart.empty()) {
+        cout << "\n❌ Cart is empty!\n";
+        return;
+    }
+
+    if (currentUser == nullptr) {
+        cout << "\n❌ Please login first!\n";
+        return;
+    }
+
+    double subtotal = 0;
+    int prepTotal = 0;
+
+    for (auto& c : cart) {
+        subtotal += c.total();
+        prepTotal += c.prepTotal();
+    }
+
+    double tax = subtotal * 0.05;
+    double discount = (subtotal > 500) ? subtotal * 0.10 : 0;
+    double finalAmount = subtotal + tax - discount;
+
+    string orderID = generateOrderID();
+
+    cout << "\n========== RECEIPT ==========\n";
+    cout << "Order ID: " << orderID << endl;
+    cout << "Customer: " << currentUser->username << endl;
+    cout << "________________________________\n";
+
+    for (auto& c : cart) {
+        cout << c.itemName << " x" << c.quantity << " ₹" << c.total();
+        if (!c.comment.empty()) {
+            cout << "\n   📝 Note: " << c.comment;
+        }
+        cout << endl;
+    }
+
+    cout << "________________________________\n";
+    cout << "Subtotal: ₹" << subtotal << endl;
+    cout << "Tax (5%): ₹" << tax << endl;
+
+    if (discount > 0) {
+        cout << "Discount (10%): -₹" << discount << endl;
+    }
+
+    cout << "Final Amount: ₹" << finalAmount << endl;
+    cout << "Estimated Prep Time: ~" << prepTotal << " minutes\n";
+
+    cout << "\n========== PAYMENT SPLIT ==========\n";
+    cout << "1. Pay full amount yourself\n";
+    cout << "2. Split payment with others\n";
+    int splitChoice;
+    cout << "Select option: ";
+    cin >> splitChoice;
+
+    if (splitChoice == 2) {
+        int people;
+        cout << "Split between how many people (including yourself): ";
+        cin >> people;
+
+        if (people <= 0) {
+            cout << "❌ Invalid number of people!\n";
+            return;
+        }
+
+        if (people > 1) {
+            cout << "\n--- SPLIT BREAKDOWN ---\n";
+            cout << "Total Amount: ₹" << finalAmount << endl;
+            cout << "Number of people: " << people << endl;
+            cout << "Each person pays: ₹" << (finalAmount / people) << endl;
+        }
+    } else if (splitChoice != 1) {
+        cout << "❌ Invalid choice!\n";
+        return;
+    }
+
+    cout << "\n========== PAYMENT METHOD ==========\n";
+    cout << "1. Card\n";
+    cout << "2. UPI\n";
+    cout << "3. Wallet (Balance: ₹" << currentUser->walletBalance << ")\n";
+    int payMethod;
+    cout << "Select payment method: ";
+    cin >> payMethod;
+
+    bool paymentSuccess = false;
+
+    if (payMethod == 1) {
+        string cardNum;
+        cout << "Enter Card Number (last 4 digits): ";
+        cin >> cardNum;
+        cout << "✓ Payment successful via Card!\n";
+        paymentSuccess = true;
+    } else if (payMethod == 2) {
+        string upiId;
+        cout << "Enter UPI ID: ";
+        cin.ignore();
+        getline(cin, upiId);
+        cout << "✓ Payment successful via UPI!\n";
+        paymentSuccess = true;
+    } else if (payMethod == 3) {
+        if (currentUser->walletBalance >= finalAmount) {
+            currentUser->walletBalance -= finalAmount;
+            cout << "✓ Payment successful via Wallet!\n";
+            cout << "Remaining Wallet Balance: ₹" << currentUser->walletBalance << endl;
+            paymentSuccess = true;
+        } else {
+            cout << "❌ Insufficient wallet balance!\n";
+            return;
+        }
+    } else {
+        cout << "❌ Invalid payment method!\n";
+        return;
+    }
+
+    if (paymentSuccess) {
+        // CREATE ORDER RECORD
+        OrderRecord order;
+        order.orderID = orderID;
+        order.username = currentUser->username;
+        order.email = currentUser->email;
+        order.phoneNumber = currentUser->phoneNumber;
+        order.items = cart;
+        order.subtotal = subtotal;
+        order.tax = tax;
+        order.discount = discount;
+        order.finalAmount = finalAmount;
+        order.paymentMethod = (payMethod == 1) ? "Card" : (payMethod == 2) ? "UPI" : "Wallet";
+        order.orderDate = getCurrentDate();
+        order.orderTime = getCurrentTime();
+        order.estimatedPrepTime = prepTotal;
+        order.isCompleted = false;
+
+        allOrders.push_back(order);
+        currentUser->orderHistory.push_back(orderID);
+        currentUser->totalSpent += finalAmount;
+
+        // Update trending
+        for (auto& item : cart) {
+            trendingDishes[item.itemName] += item.quantity;
+        }
+
+        // Add to kitchen queue
+        for (auto& item : cart) {
+            KitchenPrepItem kItem(item.itemName, item.quantity, item.comment, item.prepTime, orderID);
+            kItem.orderDate = order.orderDate;
+            kItem.orderTime = order.orderTime;
+            kitchenQueue.push_back(kItem);
+        }
+
+        // Calculate profit
+        double orderProfit = 0;
+        for (auto& item : cart) {
+            double itemCost = item.total() * COST_PERCENTAGE;
+            orderProfit += item.total() - itemCost;
+        }
+        orderProfit = orderProfit - (tax * COST_PERCENTAGE);
+        totalProfit += orderProfit;
+        totalRevenue += finalAmount;
+
+        // Send notification to user
+        sendNotification(orderID, currentUser->username, "Your order #" + orderID + " has been received! Estimated prep time: " + to_string(prepTotal) + " minutes.");
+
+        cart.clear();
+        menuDisplayed = false;
+        cout << "\n========== ✓ ORDER PLACED SUCCESSFULLY! ==========\n";
+        cout << "Your order has been sent to the kitchen.\n";
+    }
+}
+
+/* ============= VIEW NOTIFICATIONS ============= */
+void viewNotifications() {
+    if (currentUser == nullptr) {
+        cout << "\n❌ Please login first!\n";
+        return;
+    }
+
+    if (currentUser->notifications.empty()) {
+        cout << "\n❌ No notifications!\n";
+        return;
+    }
+
+    cout << "\n========== YOUR NOTIFICATIONS ==========\n";
+    for (int i = 0; i < currentUser->notifications.size(); i++) {
+        cout << "\n" << (i + 1) << ". [" << currentUser->notifications[i].timestamp << "] "
+             << currentUser->notifications[i].message;
+        if (!currentUser->notifications[i].isRead) {
+            cout << " (NEW)";
+        }
+        cout << endl;
+    }
+
+    // Mark all as read
+    for (auto& notif : currentUser->notifications) {
+        notif.isRead = true;
+    }
+}
+
+/* ============= USER PROFILE ============= */
+void userProfile() {
+    if (currentUser == nullptr) {
+        cout << "\n❌ Please login first!\n";
+        return;
+    }
+
+    cout << "\n========== USER PROFILE ==========\n";
+    cout << "Username: " << currentUser->username << endl;
+    cout << "Email: " << currentUser->email << endl;
+    cout << "Phone: " << currentUser->phoneNumber << endl;
+    cout << "Wallet Balance: ₹" << currentUser->walletBalance << endl;
+    cout << "Total Orders: " << currentUser->orderHistory.size() << endl;
+    cout << "Total Spent: ₹" << currentUser->totalSpent << endl;
+
+    if (!currentUser->orderHistory.empty()) {
+        cout << "\nOrder History:\n";
+        for (int i = 0; i < currentUser->orderHistory.size(); i++) {
+            cout << (i + 1) << ". " << currentUser->orderHistory[i] << endl;
+        }
+    }
+}
+
+/* ============= ADD WALLET BALANCE ============= */
+void addWalletBalance() {
+    if (currentUser == nullptr) {
+        cout << "\n❌ Please login first!\n";
+        return;
+    }
+
+    cout << "\nCurrent Wallet Balance: ₹" << currentUser->walletBalance << endl;
+    double amount;
+    cout << "Enter amount to add: ₹";
+    cin >> amount;
+
+    if (amount <= 0) {
+        cout << "❌ Invalid amount!\n";
+        return;
+    }
+
+    currentUser->walletBalance += amount;
+    cout << "✓ Amount added successfully!\n";
+    cout << "New Wallet Balance: ₹" << currentUser->walletBalance << endl;
+}
+
+/* ============= DISPLAY USER MENU ============= */
+void displayUserMenu() {
+    cout << "\n========== CAFE MANAGEMENT SYSTEM ==========\n";
+
+    if (currentUser == nullptr) {
+        cout << "1. Register\n";
+        cout << "2. Login\n";
+        cout << "3. Exit\n";
+    } else {
+        cout << "Welcome, " << currentUser->username << "!\n";
+        cout << "\n--- ORDERING ---\n";
+        cout << "1. View Full Menu\n";
+        cout << "2. Add Item to Cart\n";
+        cout << "3. Search Food\n";
+        cout << "4. Show Vegan Menu\n";
+        cout << "5. Suggest Meal (Random)\n";
+        cout << "6. Today's Combo\n";
+        cout << "\n--- CART & CHECKOUT ---\n";
+        cout << "7. View Cart\n";
+        cout << "8. Edit Cart Item Quantity\n";
+        cout << "9. Edit Cart Item Comments\n";
+        cout << "10. Remove Item from Cart\n";
+        cout << "11. Checkout & Pay\n";
+        cout << "\n--- PROFILE & OTHER ---\n";
+        cout << "12. View Profile\n";
+        cout << "13. Add Wallet Balance\n";
+        cout << "14. View Notifications\n";
+        cout << "15. Show Trending Dishes\n";
+        cout << "16. Logout\n";
+        cout << "17. Exit\n";
+    }
+}
+
+/* ============= USER MENU ============= */
+void userMenu() {
+    int choice;
+
+    while (true) {
+        displayUserMenu();
+        cout << "\nEnter your choice: ";
+        cin >> choice;
+
+        if (currentUser == nullptr) {
+            if (choice == 1) {
+                userRegistration();
+            } else if (choice == 2) {
+                userLogin();
+            } else if (choice == 3) {
+                cout << "\n✓ Thank you for using our Cafe! Goodbye!\n";
+                return;
+            } else {
+                cout << "❌ Invalid choice!\n";
+            }
+        } else {
+            switch (choice) {
+            case 1:
+                showMenu();
+                break;
+            case 2:
+                addOrder();
+                break;
+            case 3:
+                searchFood();
+                break;
+            case 4:
+                veganMenu();
+                break;
+            case 5:
+                randomMeal();
+                break;
+            case 6:
+                comboGenerator();
+                break;
+            case 7:
+                showCart();
+                break;
+            case 8:
+                editQuantity();
+                break;
+            case 9:
+                editComments();
+                break;
+            case 10:
+                removeItem();
+                break;
+            case 11:
+                checkout();
+                break;
+            case 12:
+                userProfile();
+                break;
+            case 13:
+                addWalletBalance();
+                break;
+            case 14:
+                viewNotifications();
+                break;
+            case 15:
+                showTrending();
+                break;
+            case 16:
+                currentUser = nullptr;
+                cart.clear();
+                menuDisplayed = false;
+                cout << "\n✓ Logged out successfully!\n";
+                break;
+            case 17:
+                cout << "\n✓ Thank you for using our Cafe! Goodbye!\n";
+                return;
+            default:
+                cout << "❌ Invalid choice! Please try again.\n";
+            }
+        }
+    }
+}
+
+/* ============= ADMIN SECTION ============= */
+
+/* ============= ADMIN LOGIN ============= */
+bool adminLogin() {
+    cout << "\n========== ADMIN LOGIN ==========\n";
+    string username, password;
+
+    cout << "Enter admin username: ";
+    cin >> username;
+
+    cout << "Enter admin password: ";
+    cin >> password;
+
+    if (username == adminUsername && password == adminPassword) {
+        adminLoggedIn = true;
+        cout << "\n✓ Admin login successful!\n";
+        return true;
+    } else {
+        cout << "\n❌ Invalid credentials!\n";
+        return false;
+    }
+}
+
+/* ============= VIEW ALL USERS ============= */
+void viewAllUsers() {
+    if (allUsers.empty()) {
+        cout << "\n❌ No users found!\n";
+        return;
+    }
+
+    cout << "\n========== ALL USERS ==========\n";
+    cout << left << setw(20) << "Username" << setw(25) << "Email" << setw(15) << "Phone" 
+         << setw(15) << "Wallet" << setw(15) << "Total Spent" << setw(10) << "Orders\n";
+    cout << string(100, '-') << endl;
+
+    for (auto& p : allUsers) {
+        User& user = p.second;
+        cout << left << setw(20) << user.username 
+             << setw(25) << user.email 
+             << setw(15) << user.phoneNumber 
+             << setw(15) << "₹" + to_string((int)user.walletBalance)
+             << setw(15) << "₹" + to_string((int)user.totalSpent)
+             << setw(10) << user.orderHistory.size() << endl;
+    }
+}
+
+/* ============= VIEW USER DETAILS ============= */
+void viewUserDetails() {
+    string username;
+    cout << "\nEnter username to view details: ";
+    cin >> username;
+
+    if (allUsers.find(username) == allUsers.end()) {
+        cout << "\n❌ User not found!\n";
+        return;
+    }
+
+    User& user = allUsers[username];
+    cout << "\n========== USER DETAILS ==========\n";
+    cout << "Username: " << user.username << endl;
+    cout << "Email: " << user.email << endl;
+    cout << "Phone: " << user.phoneNumber << endl;
+    cout << "Wallet Balance: ₹" << user.walletBalance << endl;
+    cout << "Total Amount Spent: ₹" << user.totalSpent << endl;
+    cout << "Total Orders: " << user.orderHistory.size() << endl;
+    cout << "Average Order Value: ₹" << (user.orderHistory.size() > 0 ? user.totalSpent / user.orderHistory.size() : 0) << endl;
+
+    cout << "\nOrder History:\n";
+    for (auto& orderID : user.orderHistory) {
+        for (auto& order : allOrders) {
+            if (order.orderID == orderID) {
+                cout << "  - " << orderID << " | Amount: ₹" << order.finalAmount << " | Date: " << order.orderDate 
+                     << " | Status: " << (order.isCompleted ? "✓ Completed" : "⏳ Pending") << endl;
+            }
+        }
+    }
+}
+
+/* ============= VIEW ALL ORDERS ============= */
+void viewAllOrders() {
+    if (allOrders.empty()) {
+        cout << "\n❌ No orders found!\n";
+        return;
+    }
+
+    cout << "\n========== ALL ORDERS ==========\n";
+    cout << left << setw(12) << "Order ID" << setw(20) << "Customer" << setw(12) << "Amount" 
+         << setw(15) << "Payment" << setw(12) << "Date" << setw(10) << "Status\n";
+    cout << string(90, '-') << endl;
+
+    for (auto& order : allOrders) {
+        string status = order.isCompleted ? "✓ Ready" : "⏳ Prep";
+        cout << left << setw(12) << order.orderID 
+             << setw(20) << order.username 
+             << setw(12) << "₹" + to_string((int)order.finalAmount)
+             << setw(15) << order.paymentMethod
+             << setw(12) << order.orderDate
+             << setw(10) << status << endl;
+    }
+}
+
+/* ============= VIEW ORDER DETAILS ============= */
+void viewOrderDetails() {
+    string orderID;
+    cout << "\nEnter Order ID: ";
+    cin >> orderID;
+
+    bool found = false;
+    for (auto& order : allOrders) {
+        if (order.orderID == orderID) {
+            found = true;
+            cout << "\n========== ORDER DETAILS ==========\n";
+            cout << "Order ID: " << order.orderID << endl;
+            cout << "Customer: " << order.username << endl;
+            cout << "Email: " << order.email << endl;
+            cout << "Phone: " << order.phoneNumber << endl;
+            cout << "Order Date & Time: " << order.orderDate << " " << order.orderTime << endl;
+            cout << "Payment Method: " << order.paymentMethod << endl;
+            cout << "\n--- ITEMS ---\n";
+            for (auto& item : order.items) {
+                cout << item.itemName << " x" << item.quantity << " = ₹" << item.total();
+                if (!item.comment.empty()) {
+                    cout << "\n  Note: " << item.comment;
+                }
+                cout << endl;
+            }
+            cout << "\n--- BILL ---\n";
+            cout << "Subtotal: ₹" << order.subtotal << endl;
+            cout << "Tax (5%): ₹" << order.tax << endl;
+            cout << "Discount: ₹" << order.discount << endl;
+            cout << "Final Amount: ₹" << order.finalAmount << endl;
+            cout << "Status: " << (order.isCompleted ? "✓ READY FOR DELIVERY" : "⏳ BEING PREPARED") << endl;
+            break;
+        }
+    }
+
+    if (!found) {
+        cout << "\n❌ Order not found!\n";
+    }
+}
+
+/* ============= VIEW KITCHEN QUEUE ============= */
+void viewKitchenQueue() {
+    if (kitchenQueue.empty()) {
+        cout << "\n✓ Kitchen queue is empty!\n";
+        return;
+    }
+
+    cout << "\n========== KITCHEN PREPARATION QUEUE ==========\n";
+    
+    vector<KitchenPrepItem> sortedQueue = kitchenQueue;
+    sort(sortedQueue.begin(), sortedQueue.end(),
+         [](const KitchenPrepItem& a, const KitchenPrepItem& b) {
+             if (a.isPrepared == b.isPrepared) {
+                 return a.priority < b.priority;
+             }
+             return !a.isPrepared && b.isPrepared;
+         });
+
+    cout << left << setw(25) << "Item Name" << setw(8) << "Qty" << setw(10) << "Prep Time" 
+         << setw(12) << "Order ID" << setw(12) << "Status" << setw(10) << "Priority\n";
+    cout << string(90, '-') << endl;
+
+    int pendingCount = 0;
+    for (auto& item : sortedQueue) {
+        if (!item.isPrepared) pendingCount++;
+
+        string priorityStr;
+        if (item.priority == 1) priorityStr = "⚡ HIGH";
+        else if (item.priority == 2) priorityStr = "🔥 URGENT";
+        else if (item.priority == 3) priorityStr = "⏱️ NORMAL";
+        else if (item.priority == 4) priorityStr = "🐢 LOW";
+        else priorityStr = "❄️ VERY LOW";
+
+        string status = item.isPrepared ? "✓ Done" : "⏳ Pending";
+
+        cout << left << setw(25) << item.itemName 
+             << setw(8) << item.quantity 
+             << setw(10) << (to_string(item.prepTime) + "m")
+             << setw(12) << item.orderID
+             << setw(12) << status
+             << setw(10) << priorityStr << endl;
+
+        if (!item.comment.empty()) {
+            cout << "  📝 Note: " << item.comment << endl;
+        }
+    }
+
+    cout << "\nTotal Pending Items: " << pendingCount << endl;
+}
+
+/* ============= MARK ITEM AS PREPARED & SEND NOTIFICATION ============= */
+void markItemPrepared() {
+    string orderID;
+    cout << "\nEnter Order ID to mark as completed: ";
+    cin >> orderID;
+
+    bool found = false;
+    int totalItems = 0;
+    int completedItems = 0;
+
+    // Count total items for this order
+    for (auto& item : kitchenQueue) {
+        if (item.orderID == orderID) {
+            totalItems++;
+        }
+    }
+
+    // Mark items as prepared
+    for (auto& item : kitchenQueue) {
+        if (item.orderID == orderID && !item.isPrepared) {
+            item.isPrepared = true;
+            cout << "✓ " << item.itemName << " marked as prepared!\n";
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "❌ Order not found or already completed!\n";
+        return;
+    }
+
+    // Check if entire order is completed
+    bool allDone = true;
+    for (auto& item : kitchenQueue) {
+        if (item.orderID == orderID) {
+            if (!item.isPrepared) {
+                allDone = false;
+                break;
+            }
+            completedItems++;
+        }
+    }
+
+    if (allDone && totalItems == completedItems) {
+        for (auto& order : allOrders) {
+            if (order.orderID == orderID) {
+                order.isCompleted = true;
+
+                // SEND NOTIFICATION TO USER
+                string message = "🎉 Your order #" + orderID + " is ready! Please come to the counter or wait for delivery.";
+                sendNotification(orderID, order.username, message);
+
+                cout << "\n✓✓ Order " << orderID << " is now READY FOR PICKUP/DELIVERY!\n";
+                cout << "📢 Notification sent to customer!\n";
+                break;
+            }
+        }
+    } else {
+        cout << "\n⏳ Preparing items... " << completedItems << "/" << totalItems << " items done.\n";
+    }
+}
+
+/* ============= FINANCIAL REPORT ============= */
+void viewFinancialReport() {
+    cout << "\n========== FINANCIAL REPORT ==========\n";
+    cout << "Total Revenue: ₹" << fixed << setprecision(2) << totalRevenue << endl;
+    cout << "Total Profit (40% margin): ₹" << totalProfit << endl;
+    cout << "Profit Margin: " << (totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0) << "%\n";
+    cout << "Total Orders: " << allOrders.size() << endl;
+
+    if (allOrders.size() > 0) {
+        double avgOrderValue = totalRevenue / allOrders.size();
+        cout << "Average Order Value: ₹" << avgOrderValue << endl;
+
+        int completedOrders = 0;
+        for (auto& order : allOrders) {
+            if (order.isCompleted) completedOrders++;
+        }
+        cout << "Completed Orders: " << completedOrders << endl;
+        cout << "Pending Orders: " << (allOrders.size() - completedOrders) << endl;
+    }
+
+    cout << "\n--- PAYMENT METHOD BREAKDOWN ---\n";
+    map<string, int> paymentCounts;
+    map<string, double> paymentAmount;
+    for (auto& order : allOrders) {
+        paymentCounts[order.paymentMethod]++;
+        paymentAmount[order.paymentMethod] += order.finalAmount;
+    }
+    for (auto& p : paymentCounts) {
+        cout << p.first << ": " << p.second << " orders | Total: ₹" << paymentAmount[p.first] << endl;
+    }
+}
+
+/* ============= VIEW TRENDING DISHES ============= */
+void viewTrendingDishes() {
+    if (trendingDishes.empty()) {
+        cout << "\n❌ No orders yet!\n";
+        return;
+    }
+
+    cout << "\n========== TRENDING DISHES ==========\n";
+    vector<pair<string, int>> trends(trendingDishes.begin(), trendingDishes.end());
+    sort(trends.begin(), trends.end(),
+         [](const pair<string, int>& a, const pair<string, int>& b) {
+             return a.second > b.second;
+         });
+
+    cout << left << setw(25) << "Dish Name" << setw(15) << "Times Ordered" << setw(15) << "Rank\n";
+    cout << string(55, '-') << endl;
+
+    for (int i = 0; i < trends.size(); i++) {
+        cout << left << setw(25) << trends[i].first 
+             << setw(15) << trends[i].second 
+             << setw(15) << "#" + to_string(i + 1) << endl;
+    }
+}
+
+/* ============= GENERATE SALES REPORT ============= */
+void generateSalesReport() {
+    cout << "\n========== SALES REPORT ==========\n";
+    
+    cout << "\n--- TODAY'S SALES ---\n";
+    string today = getCurrentDate();
+    double todayRevenue = 0;
+    int todayOrders = 0;
+
+    for (auto& order : allOrders) {
+        if (order.orderDate == today) {
+            todayRevenue += order.finalAmount;
+            todayOrders++;
+        }
+    }
+
+    cout << "Date: " << today << endl;
+    cout << "Total Orders: " << todayOrders << endl;
+    cout << "Total Revenue: ₹" << todayRevenue << endl;
+
+    cout << "\n--- CATEGORY WISE SALES ---\n";
+    map<string, double> categorySales;
+    map<string, int> categoryCount;
+
+    for (auto& order : allOrders) {
+        for (auto& item : order.items) {
+            for (auto& menuItem : menu) {
+                if (menuItem.name == item.itemName) {
+                    categorySales[menuItem.category] += item.total();
+                    categoryCount[menuItem.category] += item.quantity;
+                    break;
+                }
+            }
+        }
+    }
+
+    for (auto& cat : categorySales) {
+        cout << cat.first << ": " << categoryCount[cat.first] << " items | ₹" << cat.second << endl;
+    }
+
+    cout << "\n--- TOP 5 CUSTOMERS ---\n";
+    vector<pair<string, double>> customerSpending;
+    for (auto& p : allUsers) {
+        customerSpending.push_back({p.first, p.second.totalSpent});
+    }
+    sort(customerSpending.begin(), customerSpending.end(),
+         [](const pair<string, double>& a, const pair<string, double>& b) {
+             return a.second > b.second;
+         });
+
+    int count = 0;
+    for (auto& cust : customerSpending) {
+        if (count >= 5) break;
+        cout << (count + 1) << ". " << cust.first << " - ₹" << cust.second << endl;
+        count++;
+    }
+}
+
+/* ============= ADMIN DASHBOARD ============= */
+void viewDashboard() {
+    cout << "\n========== ADMIN DASHBOARD ==========\n";
+    cout << "📊 STATISTICS\n";
+    cout << "Total Users: " << allUsers.size() << endl;
+    cout << "Total Orders: " << allOrders.size() << endl;
+    cout << "Total Revenue: ₹" << totalRevenue << endl;
+    cout << "Total Profit: ₹" << totalProfit << endl;
+
+    cout << "\n📦 KITCHEN STATUS\n";
+    int pendingItems = 0;
+    for (auto& item : kitchenQueue) {
+        if (!item.isPrepared) pendingItems++;
+    }
+    cout << "Items Pending: " << pendingItems << endl;
+    cout << "Total Queue: " << kitchenQueue.size() << endl;
+
+    cout << "\n🍽️ TOP 3 DISHES\n";
+    vector<pair<string, int>> trends(trendingDishes.begin(), trendingDishes.end());
+    sort(trends.begin(), trends.end(),
+         [](const pair<string, int>& a, const pair<string, int>& b) {
+             return a.second > b.second;
+         });
+
+    for (int i = 0; i < min(3, (int)trends.size()); i++) {
+        cout << (i + 1) << ". " << trends[i].first << " (" << trends[i].second << " orders)\n";
+    }
+
+    cout << "\n📬 PENDING NOTIFICATIONS\n";
+    int totalNotifications = 0;
+    for (auto& p : allUsers) {
+        for (auto& notif : p.second.notifications) {
+            if (!notif.isRead) totalNotifications++;
+        }
+    }
+    cout << "Unread notifications: " << totalNotifications << endl;
+}
+
+/* ============= DISPLAY ADMIN MENU ============= */
+void displayAdminMenu() {
+    cout << "\n========== ADMIN CONTROL PANEL ==========\n";
+    cout << "1. View Dashboard Summary\n";
+    cout << "2. View All Users\n";
+    cout << "3. View User Details\n";
+    cout << "4. View All Orders\n";
+    cout << "5. View Order Details\n";
+    cout << "6. View Financial Report\n";
+    cout << "7. View Trending Dishes\n";
+    cout << "8. View Kitchen Queue\n";
+    cout << "9. Mark Item as Prepared (+ Send Notification)\n";
+    cout << "10. Generate Sales Report\n";
+    cout << "11. Logout\n";
+}
+
+/* ============= ADMIN MENU ============= */
+void adminMenu() {
+    int choice;
+
+    while (true) {
+        displayAdminMenu();
+        cout << "\nEnter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            viewDashboard();
+            break;
+        case 2:
+            viewAllUsers();
+            break;
+        case 3:
+            viewUserDetails();
+            break;
+        case 4:
+            viewAllOrders();
+            break;
+        case 5:
+            viewOrderDetails();
+            break;
+        case 6:
+            viewFinancialReport();
+            break;
+        case 7:
+            viewTrendingDishes();
+            break;
+        case 8:
+            viewKitchenQueue();
+            break;
+        case 9:
+            markItemPrepared();
+            break;
+        case 10:
+            generateSalesReport();
+            break;
+        case 11:
+            adminLoggedIn = false;
+            cout << "\n✓ Admin logged out successfully!\n";
+            return;
+        default:
+            cout << "❌ Invalid choice!\n";
+        }
+    }
+}
+
+/* ============= LOAD DEMO DATA ============= */
+void loadDemoData() {
+    // Add demo users
+    allUsers["Raksha"] = User("Raksha", "pass123", "raksha@gmail.com", "9876543210");
+    allUsers["Priya"] = User("Priya", "pass123", "priya@gmail.com", "9876543211");
+    allUsers["John"] = User("John", "pass123", "john@gmail.com", "9876543212");
+
+    // Add demo order for Raksha
+    OrderRecord order1;
+    order1.orderID = "CAF1001";
+    order1.username = "Raksha";
+    order1.email = "raksha@gmail.com";
+    order1.phoneNumber = "9876543210";
+    order1.items.push_back(OrderItem("Paneer Tikka", 180, 2, 15));
+    order1.items.push_back(OrderItem("Cold Coffee", 90, 1, 5));
+    order1.subtotal = 450;
+    order1.tax = 22.5;
+    order1.discount = 0;
+    order1.finalAmount = 472.5;
+    order1.paymentMethod = "UPI";
+    order1.orderDate = getCurrentDate();
+    order1.orderTime = getCurrentTime();
+    order1.estimatedPrepTime = 20;
+    order1.isCompleted = true;
+
+    allUsers["Raksha"].totalSpent += order1.finalAmount;
+    allUsers["Raksha"].orderHistory.push_back(order1.orderID);
+    allOrders.push_back(order1);
+    trendingDishes["Paneer Tikka"] += 2;
+    trendingDishes["Cold Coffee"] += 1;
+    totalRevenue += order1.finalAmount;
+
+    // Add demo order for Priya
+    OrderRecord order2;
+    order2.orderID = "CAF1002";
+    order2.username = "Priya";
+    order2.email = "priya@gmail.com";
+    order2.phoneNumber = "9876543211";
+    order2.items.push_back(OrderItem("Veg Pizza", 220, 1, 25));
+    order2.items.push_back(OrderItem("Virgin Mojito", 99, 2, 5));
+    order2.subtotal = 418;
+    order2.tax = 20.9;
+    order2.discount = 0;
+    order2.finalAmount = 438.9;
+    order2.paymentMethod = "Card";
+    order2.orderDate = getCurrentDate();
+    order2.orderTime = getCurrentTime();
+    order2.estimatedPrepTime = 30;
+    order2.isCompleted = false;
+
+    allUsers["Priya"].totalSpent += order2.finalAmount;
+    allUsers["Priya"].orderHistory.push_back(order2.orderID);
+    allOrders.push_back(order2);
+    trendingDishes["Veg Pizza"] += 1;
+    trendingDishes["Virgin Mojito"] += 2;
+    totalRevenue += order2.finalAmount;
+
+    // Add to kitchen queue
+    kitchenQueue.push_back(KitchenPrepItem("Veg Pizza", 1, "", 25, "CAF1002", 2));
+    kitchenQueue.push_back(KitchenPrepItem("Virgin Mojito", 2, "", 5, "CAF1002", 2));
+
+    cout << "\n✓ Demo data loaded successfully!\n";
+}
+
+/* ============= MAIN FUNCTION ============= */
+int main() {
+    cout << "========== CAFE MANAGEMENT SYSTEM (INTEGRATED) ==========\n";
+    cout << "Loading demo data...\n";
+    loadDemoData();
+
+    int mainChoice;
+    while (true) {
+        cout << "\n========== MAIN MENU ==========\n";
+        cout << "1. Customer Portal\n";
+        cout << "2. Admin Portal\n";
+        cout << "3. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> mainChoice;
+
+        if (mainChoice == 1) {
+            userMenu();
+        } else if (mainChoice == 2) {
+            if (adminLogin()) {
+                adminMenu();
+            }
+        } else if (mainChoice == 3) {
+            cout << "\n✓ Thank you for using Cafe Management System! Goodbye!\n";
+            break;
+        } else {
+            cout << "❌ Invalid choice!\n";
+        }
+    }
+
+    return 0;
+}

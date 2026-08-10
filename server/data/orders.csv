@@ -1,0 +1,5 @@
+orderID,username,email,phoneNumber,itemsCount,subtotal,tax,discount,finalAmount,paymentMethod,orderDate,orderTime,isCompleted
+CAF1001,Raksha,raksha@gmail.com,9876543210,2,450,22.5,0,472.5,UPI,10/8/2026,5:28:15 pm,true
+CAF1002,Priya,priya@gmail.com,9876543211,2,418,20.9,0,438.9,Card,10/8/2026,5:28:15 pm,false
+CAF70961,Raksha,raksha@gmail.com,9876543210,1,80,4,0,84,Wallet,10/8/2026,5:33:38 pm,true
+CAF74395,sakshi ,24cse026@bnmit.in,7894561230,1,100,5,0,105,Card,10/8/2026,6:09:50 pm,true

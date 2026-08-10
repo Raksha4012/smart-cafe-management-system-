@@ -1,0 +1,441 @@
+{
+  "users": {
+    "Raksha": {
+      "username": "Raksha",
+      "password": "pass123",
+      "email": "raksha@gmail.com",
+      "phoneNumber": "9876543210",
+      "walletBalance": 416,
+      "orderHistory": [
+        "CAF1001",
+        "CAF70961"
+      ],
+      "totalSpent": 556.5,
+      "notifications": [
+        {
+          "orderID": "CAF70961",
+          "username": "Raksha",
+          "message": "Your order #CAF70961 has been received! Estimated prep time: ~10 minutes.",
+          "timestamp": "5:33:38 pm",
+          "isRead": false
+        },
+        {
+          "orderID": "CAF70961",
+          "username": "Raksha",
+          "message": "Your order #CAF70961 has been completed successfully! Please collect your order.",
+          "timestamp": "5:33:47 pm",
+          "isRead": false
+        }
+      ],
+      "walletPin": "1234"
+    },
+    "Priya": {
+      "username": "Priya",
+      "password": "pass123",
+      "email": "priya@gmail.com",
+      "phoneNumber": "9876543211",
+      "walletBalance": 300,
+      "orderHistory": [
+        "CAF1002"
+      ],
+      "totalSpent": 438.9,
+      "notifications": [
+        {
+          "orderID": "CAF1002",
+          "username": "Priya",
+          "message": "Your order #CAF1002 has been received! Estimated prep time: 35 minutes.",
+          "timestamp": "5:28:15 pm",
+          "isRead": false
+        }
+      ],
+      "walletPin": "1234"
+    },
+    "Raksha ": {
+      "username": "Raksha ",
+      "password": "pass123",
+      "email": "rakshapatel7274@gmail.com",
+      "phoneNumber": "1234567899",
+      "walletBalance": 0,
+      "orderHistory": [],
+      "totalSpent": 0,
+      "notifications": []
+    },
+    "sakshi ": {
+      "username": "sakshi ",
+      "password": "123456",
+      "email": "24cse026@bnmit.in",
+      "phoneNumber": "7894561230",
+      "walletBalance": 0,
+      "orderHistory": [
+        "CAF74395"
+      ],
+      "totalSpent": 105,
+      "notifications": [
+        {
+          "orderID": "CAF74395",
+          "username": "sakshi ",
+          "message": "Your order #CAF74395 has been received! Estimated prep time: ~8 minutes.",
+          "timestamp": "6:09:50 pm",
+          "isRead": false
+        },
+        {
+          "orderID": "CAF74395",
+          "username": "sakshi ",
+          "message": "Your order #CAF74395 has been completed successfully! Please collect your order.",
+          "timestamp": "6:11:05 pm",
+          "isRead": false
+        }
+      ]
+    }
+  },
+  "menuItems": [
+    {
+      "name": "Paneer Tikka",
+      "price": 180,
+      "category": "Starter",
+      "type": "Veg",
+      "prepTime": 15
+    },
+    {
+      "name": "Chicken 65",
+      "price": 190,
+      "category": "Starter",
+      "type": "NonVeg",
+      "prepTime": 20
+    },
+    {
+      "name": "Honey Chilli Potato",
+      "price": 150,
+      "category": "Starter",
+      "type": "Vegan",
+      "prepTime": 12
+    },
+    {
+      "name": "Spring Rolls",
+      "price": 140,
+      "category": "Starter",
+      "type": "Vegan",
+      "prepTime": 10
+    },
+    {
+      "name": "Tomato Soup",
+      "price": 100,
+      "category": "Soup",
+      "type": "Vegan",
+      "prepTime": 8
+    },
+    {
+      "name": "Sweet Corn Soup",
+      "price": 110,
+      "category": "Soup",
+      "type": "Veg",
+      "prepTime": 8
+    },
+    {
+      "name": "Veg Pizza",
+      "price": 220,
+      "category": "Pizza",
+      "type": "Veg",
+      "prepTime": 25
+    },
+    {
+      "name": "Chicken Pizza",
+      "price": 280,
+      "category": "Pizza",
+      "type": "NonVeg",
+      "prepTime": 30
+    },
+    {
+      "name": "Rajma Chawal",
+      "price": 140,
+      "category": "Main",
+      "type": "Vegan",
+      "prepTime": 20
+    },
+    {
+      "name": "Butter Chicken",
+      "price": 240,
+      "category": "Main",
+      "type": "NonVeg",
+      "prepTime": 25
+    },
+    {
+      "name": "Veg Noodles",
+      "price": 160,
+      "category": "Main",
+      "type": "Vegan",
+      "prepTime": 15
+    },
+    {
+      "name": "Pav Bhaji",
+      "price": 120,
+      "category": "Main",
+      "type": "Veg",
+      "prepTime": 12
+    },
+    {
+      "name": "Masala Chai",
+      "price": 40,
+      "category": "Drink",
+      "type": "Veg",
+      "prepTime": 5
+    },
+    {
+      "name": "Cold Coffee",
+      "price": 90,
+      "category": "Drink",
+      "type": "Veg",
+      "prepTime": 5
+    },
+    {
+      "name": "Virgin Mojito",
+      "price": 99,
+      "category": "Drink",
+      "type": "Vegan",
+      "prepTime": 5
+    },
+    {
+      "name": "French Fries",
+      "price": 120,
+      "category": "Snack",
+      "type": "Vegan",
+      "prepTime": 10
+    },
+    {
+      "name": "Veg Sandwich",
+      "price": 90,
+      "category": "Snack",
+      "type": "Veg",
+      "prepTime": 8
+    },
+    {
+      "name": "Chicken Roll",
+      "price": 170,
+      "category": "Snack",
+      "type": "NonVeg",
+      "prepTime": 12
+    },
+    {
+      "name": "Gulab Jamun",
+      "price": 50,
+      "category": "Dessert",
+      "type": "Veg",
+      "prepTime": 5
+    },
+    {
+      "name": "Brownie Icecream",
+      "price": 120,
+      "category": "Dessert",
+      "type": "Veg",
+      "prepTime": 7
+    }
+  ],
+  "orders": [
+    {
+      "orderID": "CAF1001",
+      "username": "Raksha",
+      "email": "raksha@gmail.com",
+      "phoneNumber": "9876543210",
+      "items": [
+        {
+          "itemName": "Paneer Tikka",
+          "price": 180,
+          "quantity": 2,
+          "comment": "",
+          "prepTime": 15
+        },
+        {
+          "itemName": "Cold Coffee",
+          "price": 90,
+          "quantity": 1,
+          "comment": "Extra ice",
+          "prepTime": 5
+        }
+      ],
+      "subtotal": 450,
+      "tax": 22.5,
+      "discount": 0,
+      "finalAmount": 472.5,
+      "paymentMethod": "UPI",
+      "orderDate": "10/8/2026",
+      "orderTime": "5:28:15 pm",
+      "estimatedPrepTime": 35,
+      "isCompleted": true
+    },
+    {
+      "orderID": "CAF1002",
+      "username": "Priya",
+      "email": "priya@gmail.com",
+      "phoneNumber": "9876543211",
+      "items": [
+        {
+          "itemName": "Veg Pizza",
+          "price": 220,
+          "quantity": 1,
+          "comment": "No olives",
+          "prepTime": 25
+        },
+        {
+          "itemName": "Virgin Mojito",
+          "price": 99,
+          "quantity": 2,
+          "comment": "",
+          "prepTime": 5
+        }
+      ],
+      "subtotal": 418,
+      "tax": 20.9,
+      "discount": 0,
+      "finalAmount": 438.9,
+      "paymentMethod": "Card",
+      "orderDate": "10/8/2026",
+      "orderTime": "5:28:15 pm",
+      "estimatedPrepTime": 35,
+      "isCompleted": false
+    },
+    {
+      "orderID": "CAF70961",
+      "username": "Raksha",
+      "email": "raksha@gmail.com",
+      "phoneNumber": "9876543210",
+      "items": [
+        {
+          "itemName": "Masala Chai",
+          "price": 40,
+          "quantity": 2,
+          "comment": "Less sugar",
+          "prepTime": 5
+        }
+      ],
+      "subtotal": 80,
+      "tax": 4,
+      "discount": 0,
+      "finalAmount": 84,
+      "paymentMethod": "Wallet",
+      "orderDate": "10/8/2026",
+      "orderTime": "5:33:38 pm",
+      "isCompleted": true,
+      "estimatedPrepTime": 10
+    },
+    {
+      "orderID": "CAF74395",
+      "username": "sakshi ",
+      "email": "24cse026@bnmit.in",
+      "phoneNumber": "7894561230",
+      "items": [
+        {
+          "itemName": "Tomato Soup",
+          "price": 100,
+          "quantity": 1,
+          "comment": "",
+          "prepTime": 8
+        }
+      ],
+      "subtotal": 100,
+      "tax": 5,
+      "discount": 0,
+      "finalAmount": 105,
+      "paymentMethod": "Card",
+      "orderDate": "10/8/2026",
+      "orderTime": "6:09:50 pm",
+      "isCompleted": true,
+      "estimatedPrepTime": 8,
+      "splitPeople": 2,
+      "perPersonAmount": 52.5
+    }
+  ],
+  "kitchenQueue": [
+    {
+      "itemName": "Veg Pizza",
+      "quantity": 1,
+      "comment": "No olives",
+      "prepTime": 25,
+      "orderID": "CAF1002",
+      "orderDate": "10/8/2026",
+      "orderTime": "5:28:15 pm",
+      "isPrepared": false,
+      "priority": 2
+    },
+    {
+      "itemName": "Virgin Mojito",
+      "quantity": 2,
+      "comment": "",
+      "prepTime": 5,
+      "orderID": "CAF1002",
+      "orderDate": "10/8/2026",
+      "orderTime": "5:28:15 pm",
+      "isPrepared": false,
+      "priority": 2
+    },
+    {
+      "itemName": "Masala Chai",
+      "quantity": 2,
+      "comment": "Less sugar",
+      "prepTime": 5,
+      "orderID": "CAF70961",
+      "orderDate": "10/8/2026",
+      "orderTime": "5:33:38 pm",
+      "isPrepared": true,
+      "priority": 3
+    },
+    {
+      "itemName": "Tomato Soup",
+      "quantity": 1,
+      "comment": "",
+      "prepTime": 8,
+      "orderID": "CAF74395",
+      "orderDate": "10/8/2026",
+      "orderTime": "6:09:50 pm",
+      "isPrepared": true,
+      "priority": 3
+    }
+  ],
+  "trendingDishes": {
+    "Paneer Tikka": 2,
+    "Cold Coffee": 1,
+    "Veg Pizza": 1,
+    "Virgin Mojito": 2,
+    "Masala Chai": 2,
+    "Tomato Soup": 1
+  },
+  "ratings": [
+    {
+      "ratingID": "RAT1001",
+      "username": "Raksha",
+      "itemName": "Paneer Tikka",
+      "orderID": "CAF1001",
+      "stars": 5,
+      "comment": "Deliciously spiced and fresh paneer!",
+      "timestamp": "10/8/2026, 4:15:00 PM"
+    },
+    {
+      "ratingID": "RAT1002",
+      "username": "Priya",
+      "itemName": "Cold Coffee",
+      "orderID": "CAF1001",
+      "stars": 4,
+      "comment": "Very refreshing drink, perfect sweetness.",
+      "timestamp": "10/8/2026, 4:30:00 PM"
+    },
+    {
+      "ratingID": "RAT1003",
+      "username": "Raksha",
+      "itemName": "Veg Pizza",
+      "orderID": "CAF1002",
+      "stars": 5,
+      "comment": "Crust was crispy and cheese was so rich!",
+      "timestamp": "10/8/2026, 5:00:00 PM"
+    },
+    {
+      "ratingID": "RAT38210",
+      "username": "Raksha",
+      "itemName": "Butter Chicken",
+      "orderID": "",
+      "stars": 5,
+      "comment": "Absolutely rich gravy and tender chicken!",
+      "timestamp": "10/8/2026, 5:46:33 pm"
+    }
+  ],
+  "totalRevenue": 1100.4,
+  "totalProfit": 475.6
+}

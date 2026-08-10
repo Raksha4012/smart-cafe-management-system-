@@ -1,2 +1,11 @@
-# smart-cafe-management-system-
-Traditional café management relies on manual handling of orders, billing, payments, inventory, and sales, causing errors and delays. The Smart Café Management System automates these processes through digital ordering, billing, payment, kitchen management, inventory tracking, and sales analytics, improving efficiency and customer experience.
+
+  # Create Frontend Design
+
+  This is a code bundle for Create Frontend Design. The original project is available at https://www.figma.com/design/0xuT0APn5rnrw22MLHQ326/Create-Frontend-Design.
+
+  ## Running the code
+
+  Run `npm i` to install the dependencies.
+
+  Run `npm run dev` to start the development server.
+  

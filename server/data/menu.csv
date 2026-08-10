@@ -1,0 +1,21 @@
+name,price,category,type,prepTime
+Paneer Tikka,180,Starter,Veg,15
+Chicken 65,190,Starter,NonVeg,20
+Honey Chilli Potato,150,Starter,Vegan,12
+Spring Rolls,140,Starter,Vegan,10
+Tomato Soup,100,Soup,Vegan,8
+Sweet Corn Soup,110,Soup,Veg,8
+Veg Pizza,220,Pizza,Veg,25
+Chicken Pizza,280,Pizza,NonVeg,30
+Rajma Chawal,140,Main,Vegan,20
+Butter Chicken,240,Main,NonVeg,25
+Veg Noodles,160,Main,Vegan,15
+Pav Bhaji,120,Main,Veg,12
+Masala Chai,40,Drink,Veg,5
+Cold Coffee,90,Drink,Veg,5
+Virgin Mojito,99,Drink,Vegan,5
+French Fries,120,Snack,Vegan,10
+Veg Sandwich,90,Snack,Veg,8
+Chicken Roll,170,Snack,NonVeg,12
+Gulab Jamun,50,Dessert,Veg,5
+Brownie Icecream,120,Dessert,Veg,7

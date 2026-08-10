@@ -1,0 +1,5 @@
+ratingID,username,itemName,orderID,stars,comment,timestamp
+RAT1001,Raksha,Paneer Tikka,CAF1001,5,Deliciously spiced and fresh paneer!,"10/8/2026, 4:15:00 PM"
+RAT1002,Priya,Cold Coffee,CAF1001,4,"Very refreshing drink, perfect sweetness.","10/8/2026, 4:30:00 PM"
+RAT1003,Raksha,Veg Pizza,CAF1002,5,Crust was crispy and cheese was so rich!,"10/8/2026, 5:00:00 PM"
+RAT38210,Raksha,Butter Chicken,,5,Absolutely rich gravy and tender chicken!,"10/8/2026, 5:46:33 pm"
